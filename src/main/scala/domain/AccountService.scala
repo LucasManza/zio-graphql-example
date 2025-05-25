@@ -1,36 +1,37 @@
 package domain
 
 import domain.models.AccountDomain.*
+import domain.models.AccountErrors.*
 import zio.{IO, ZIO}
 
 // Service definition
 trait AccountService {
-  def getAccount(accountId: AccountId): IO[String, Account]
+  def getAccountById(accountId: AccountId): IO[AccountNotFound, Account]
 
-  def updateEmail(accountId: AccountId, newEmail: String): IO[String, Account]
+  def updateEmail(accountId: AccountId, newEmail: String): IO[AccountNotFound, Account]
 }
 
 // Mock implementation
 class MockAccountService extends AccountService {
   private val mockAccountId = AccountId.apply("acc-123").toOption.get
-  private var accounts = scala.collection.concurrent.TrieMap[AccountId, Account](
+  private val accounts = scala.collection.concurrent.TrieMap[AccountId, Account](
     mockAccountId -> Account(mockAccountId, "account@email.com", "password")
   )
 
-  def getAccount(accountId: AccountId): IO[String, Account] = {
+  def getAccountById(accountId: AccountId): IO[AccountNotFound, Account] = {
     accounts.get(accountId) match {
       case Some(account) => ZIO.succeed(account)
-      case None => ZIO.fail("Account not found!")
+      case None => ZIO.fail(AccountNotFound(accountId))
     }
   }
 
-  def updateEmail(accountId: AccountId, newEmail: String): IO[String, Account] = {
+  def updateEmail(accountId: AccountId, newEmail: String): IO[AccountNotFound, Account] = {
     for {
-      account <- getAccount(accountId)
+      account <- getAccountById(accountId)
       updated = account.copy(email = newEmail)
       result <- accounts.put(accountId, updated) match {
         case Some(_) => ZIO.succeed(updated)
-        case None => ZIO.fail("Account not found!")
+        case None => ZIO.fail(AccountNotFound(accountId))
       }
     } yield result
   }

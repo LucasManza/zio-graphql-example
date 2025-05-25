@@ -1,4 +1,5 @@
 import api.graphql.AccountGQL
+import api.graphql.AccountGQL.{Mutations, Queries}
 import caliban.*
 import caliban.quick.*
 import domain.{AccountService, MockAccountService}
@@ -19,6 +20,11 @@ object Main extends ZIOAppDefault {
       )
     } yield ()
 
-  }.provide(accountServiceLayer, AccountGQL.apiLayer)
+  }.provide(
+    accountServiceLayer,
+    Mutations.layer,
+    Queries.layer,
+    AccountGQL.apiLayer
+  )
 
 }
