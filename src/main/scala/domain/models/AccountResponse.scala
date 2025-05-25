@@ -1,17 +1,22 @@
 package domain.models
 
 import caliban.schema.Schema
-import domain.models.AccountDomain.{Account, AccountId}
+import domain.models.AccountDomain.{Account, AccountId, Email}
 
 object AccountResponse {
   enum GetAccountByEmailResponse derives Schema.Auto {
-    case Found(account: Account)
-    case NotFound(email: String)
+    case AccountFound(account: Account)
+    case AccountByEmailNotFound(invalidEmail: Email)
+  }
+
+  enum CreateAccountResponse derives Schema.Auto{
+    case AccountCreated(account: Account)
+    case AlreadyRegistered(invalidEmail: Email)
   }
 
   enum UpdateEmailResponse {
-    case Updated(account: Account)
-    case AccountNotFoundById(accountId: AccountId)
+    case AccountUpdated(account: Account)
+    case AccountByIdNotFound(invalidId: AccountId)
   }
 
   object UpdateEmailResponse {
