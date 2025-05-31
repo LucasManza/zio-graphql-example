@@ -3,13 +3,13 @@ package domain.models
 import caliban.schema.Schema
 import domain.models.AccountDomain.{Account, AccountId, Email}
 
-object AccountResponse {
+object AccountResponses {
   enum GetAccountByEmailResponse derives Schema.Auto {
     case AccountFound(account: Account)
     case AccountByEmailNotFound(invalidEmail: Email)
   }
 
-  enum CreateAccountResponse derives Schema.Auto{
+  enum CreateAccountResponse derives Schema.Auto {
     case AccountCreated(account: Account)
     case AlreadyRegistered(invalidEmail: Email)
   }

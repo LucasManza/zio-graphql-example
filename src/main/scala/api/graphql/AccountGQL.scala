@@ -7,10 +7,10 @@ import caliban.schema.{ArgBuilder, GenericSchema, Schema}
 import domain.AccountService
 import domain.models.AccountDomain.*
 import domain.models.AccountDomain.AccountIdSchema.auto
-import domain.models.AccountResponse.*
-import domain.models.AccountResponse.CreateAccountResponse.*
-import domain.models.AccountResponse.GetAccountByEmailResponse.*
-import domain.models.AccountResponse.UpdateEmailResponse.*
+import domain.models.AccountResponses.*
+import domain.models.AccountResponses.CreateAccountResponse.*
+import domain.models.AccountResponses.GetAccountByEmailResponse.*
+import domain.models.AccountResponses.UpdateEmailResponse.*
 import domain.models.AccountServiceErrors
 import domain.models.AccountServiceErrors.*
 import zio.{IO, Task, URLayer, ZIO, ZLayer}
@@ -31,10 +31,23 @@ object AccountGQL extends GenericSchema[AccountService] {
                        * Queries must fail with a Throwable or at least CalibanError (extends from Throwable)
                        * That's why we can have effect like Task with some content.
                        * [[AccountServiceErrors.AccountNotFoundById]] is a custom caliban error but a basic one check.
-                       * Recommend it to move errors to the A ZIO's channel so they are mapped
+                       * GraphQL Recommendation is parsing the errors into ExecutionErrors for business logic errors:
+                       * `error match
+                       *    case notFound => ExecutionError(
+                       *        msg = err.message,
+                       *        path = Nil,
+                       *        locations = Nil,
+                       *        extensions = Some(
+                       *          ResponseValue.ObjectValue(
+                       *            List(
+                       *                "code" -> ResponseValue.StringValue(err.code)
+                       *            )
+                        *         )
+                       *    )
+                       * `
                        */
                       getAccountById: GetAccountByIdArgs => IO[AccountServiceErrors.AccountNotFoundById, Account],
-                      // This is an example with a flatten Response, instead of a custom error. [RECOMMEND]
+                      // This is an example with a flatten Response, instead of a custom error by moving the error channel to success
                       @GQLDescription("Get the account by email")
                       getAccountByEmail: GetAccountByEmailArgs => Task[GetAccountByEmailResponse],
                     )

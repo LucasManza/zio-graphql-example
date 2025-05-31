@@ -11,7 +11,7 @@ object AccountServiceErrors {
   object AccountNotFoundById {
     given customEffectSchema[A](using s: Schema[Any, A]): Schema[Any, IO[AccountNotFoundById, A]] = {
       //Given a custom error. But options limitate it to Execution, Parsing and Validation.
-      Schema.customErrorEffectSchema((notFound: AccountNotFoundById) => ExecutionError(s"Error account not found: ${notFound.accountId}"))
+      Schema.customErrorEffectSchema((notFound: AccountNotFoundById) => ExecutionError(s"Error account not found by Id: ${notFound.accountId}"))
     }
   }
 
