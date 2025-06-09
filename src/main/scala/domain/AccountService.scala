@@ -2,7 +2,7 @@ package domain
 
 import domain.models.AccountDomain.*
 import domain.models.AccountServiceErrors.*
-import zio.{IO, ZIO}
+import zio.{IO, ZIO, ZLayer}
 
 import scala.util.Random
 
@@ -18,7 +18,7 @@ trait AccountService {
 }
 
 // Mock implementation
-class MockAccountService extends AccountService {
+case class MockAccountService() extends AccountService {
   private val mockAccountId = AccountId.apply("acc-123").toOption.get
   private val mockAccountEmail = Email.apply("account@gmail.com").toOption.get
   private val mockAccountPassword = Password.apply("password").toOption.get
@@ -64,6 +64,10 @@ class MockAccountService extends AccountService {
     } yield result
   }
 
+}
+
+object MockAccountService {
+  val layer = ZLayer.succeed(new MockAccountService: AccountService)
 }
 
 object RandomStringGenerator {

@@ -10,8 +10,6 @@ object AccountDomain {
   // Opaque type for AccountId
   opaque type AccountId = String
 
-  object AccountIdSchema extends SchemaDerivation[AccountId]
-
   object AccountId {
     def apply(id: String): Either[String, AccountId] =
       if id.length >= 6 then Right(id)
@@ -30,7 +28,6 @@ object AccountDomain {
       case other => Left(ExecutionError(s"Can't build AccountId from input $other"))
     }
   }
-
 
   opaque type Email = String
 
@@ -84,7 +81,9 @@ object AccountDomain {
                     )
 
   object Account {
-
     given Schema[Any, Account] = Schema.gen[Any, Account]
+
+    given ArgBuilder[Account] = ArgBuilder.gen
+
   }
 }

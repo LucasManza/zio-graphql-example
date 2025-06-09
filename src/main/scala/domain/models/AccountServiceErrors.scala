@@ -6,6 +6,9 @@ import domain.models.AccountDomain.{AccountId, Email}
 import zio.IO
 
 object AccountServiceErrors {
+  type AccountServiceError =
+    AccountNotFoundByEmail | AccountNotFoundById | DuplicateAccount
+
   case class AccountNotFoundById(accountId: AccountId)
 
   object AccountNotFoundById {

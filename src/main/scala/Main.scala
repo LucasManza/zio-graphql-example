@@ -1,30 +1,40 @@
-import api.graphql.AccountGQL
-import api.graphql.AccountGQL.{Mutations, Queries}
+import api.graphql.{AccountGQL, AuthApiGQL}
 import caliban.*
 import caliban.quick.*
-import domain.{AccountService, MockAccountService}
+import domain.models.AuthDomain.AuthSession
+import domain.{AccountService, AuthServiceLive, MockAccountService}
 import zio.*
-
+import zio.http.*
 
 object Main extends ZIOAppDefault {
+  //  override def run =
+  //    Server.serve(routes).provide(
+  //      AuthServiceLive.layer,
+  //      MockAccountService.layer,
+  //      Server.default
+  //    )
 
-  val accountServiceLayer = ZLayer.succeed(new MockAccountService: AccountService)
 
   override def run = {
     for {
-      api <- ZIO.service[GraphQL[Any]]
-      _ <- api.runServer(
-        port = 8088,
-        apiPath = "/api/graphql",
-        graphiqlPath = Some("/api/graphiql")
-      )
-    } yield ()
+      accountApi <- AccountGQL.api
+      authApi <- AuthApiGQL.api
 
-  }.provide(
-    accountServiceLayer,
-    Mutations.layer,
-    Queries.layer,
-    AccountGQL.apiLayer
-  )
+      protectedRoutes <- (accountApi |+| authApi)
+        .routes(
+          apiPath = "/api/graphql",
+          graphiqlPath = Some("/api/graphiql")
+        )
+        .map(_ @@ AuthMiddleware.middleware)
+      port <- Server.install(protectedRoutes)
+      _ <- ZIO.logInfo(s"Server started on port $port")
+      _ <- ZIO.never
+    } yield ()
+  }
+    .provide(
+      MockAccountService.layer,
+      AuthServiceLive.layer,
+      Server.defaultWithPort(8088)
+    )
 
 }
