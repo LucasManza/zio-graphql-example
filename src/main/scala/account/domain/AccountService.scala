@@ -1,8 +1,8 @@
-package domain
+package account.domain
 
-import domain.models.AccountDomain.*
-import domain.models.AccountServiceErrors.*
-import zio.{IO, ZIO, ZLayer}
+import account.domain.models.AccountDomain.*
+import account.domain.models.AccountServiceErrors.*
+import zio.{IO, Task, ZIO, ZLayer}
 
 import scala.util.Random
 
@@ -11,6 +11,8 @@ trait AccountService {
   def getAccountById(accountId: AccountId): IO[AccountNotFoundById, Account]
 
   def getAccountByEmail(email: Email): IO[AccountNotFoundByEmail, Account]
+
+  def getAllAccounts: Task[List[Account]]
 
   def updateEmail(accountId: AccountId, newEmail: Email): IO[AccountNotFoundById, Account]
 
@@ -64,6 +66,7 @@ case class MockAccountService() extends AccountService {
     } yield result
   }
 
+  override def getAllAccounts: Task[List[Account]] = ZIO.attempt(accounts.values.toList)
 }
 
 object MockAccountService {

@@ -1,4 +1,4 @@
-package domain.models
+package account.domain.models
 
 import caliban.CalibanError.ExecutionError
 import caliban.Value

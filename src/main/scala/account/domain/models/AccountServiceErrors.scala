@@ -1,8 +1,8 @@
-package domain.models
+package account.domain.models
 
 import caliban.CalibanError.ExecutionError
 import caliban.schema.Schema
-import domain.models.AccountDomain.{AccountId, Email}
+import AccountDomain.{AccountId, Email}
 import zio.IO
 
 object AccountServiceErrors {

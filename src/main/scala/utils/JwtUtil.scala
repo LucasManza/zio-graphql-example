@@ -1,11 +1,8 @@
 package utils
 
 
-import domain.models.AccountDomain.{Account, AccountId, Email}
-import domain.models.AuthServiceError
-import io.circe.generic.auto.*
-import io.circe.parser.*
-import io.circe.syntax.*
+import account.domain.models.AccountDomain.{Account, AccountId, Email}
+import authentication.domain.AuthenticationServiceError
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 
 import java.time.Clock
@@ -25,19 +22,19 @@ object JwtUtil {
     Jwt.encode(claim, secretKey, algo)
   }
 
-  def decode(token: String): Either[AuthServiceError, (AccountId, Email)] = {
+  def decode(token: String): Either[AuthenticationServiceError, (AccountId)] = {
     Jwt.decode(token, secretKey, Seq(algo)).toEither
       .flatMap { jwt =>
         val accountIdRaw = jwt.subject.getOrElse("")
-        val emailRaw = jwt.content
+//        val emailRaw = jwt.content
 
-        if (accountIdRaw.nonEmpty && emailRaw.nonEmpty) {
+        if (accountIdRaw.nonEmpty) {
           for {
-            accountId <- AccountId.apply(accountIdRaw).toOption.toRight(AuthServiceError.InvalidCredentials)
-            email <- Email.apply(emailRaw).toOption.toRight(AuthServiceError.InvalidCredentials)
-          } yield accountId -> email
-        } else Left(AuthServiceError.InvalidToken)
+            accountId <- AccountId.apply(accountIdRaw).toOption.toRight(AuthenticationServiceError.InvalidCredentials)
+            //            email <- Email.apply(emailRaw).toOption.toRight(AuthenticationServiceError.InvalidCredentials)
+          } yield accountId
+        } else Left(AuthenticationServiceError.InvalidToken)
       }
-      .left.map(_ => AuthServiceError.InvalidToken)
+      .left.map(_ => AuthenticationServiceError.InvalidToken)
   }
 }

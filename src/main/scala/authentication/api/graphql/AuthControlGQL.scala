@@ -1,5 +1,7 @@
-package api.graphql
+package authentication.api.graphql
 
+import account.domain.models.AccountDomain.{AccountId, Email}
+import authentication.domain.models.AuthDomain.{AuthenticatedSession, Session}
 import caliban.CalibanError.ExecutionError
 import caliban.ResponseValue
 import caliban.Value.StringValue
@@ -7,8 +9,6 @@ import caliban.execution.FieldInfo
 import caliban.parsing.adt.Directive
 import caliban.schema.Annotations.GQLDirective
 import caliban.wrappers.Wrapper.FieldWrapper
-import domain.models.AccountDomain.{AccountId, Email}
-import domain.models.AuthDomain.AuthSession
 import zio.query.ZQuery
 
 object AuthControlGQL {
@@ -27,10 +27,10 @@ object AuthControlGQL {
     val attributeName = "accountId"
   }
 
-  val accessControlWrapper: FieldWrapper[AuthSession] = {
-    new FieldWrapper[AuthSession](wrapPureValues = true) {
-      override def wrap[R1 <: AuthSession](query: ZQuery[R1, ExecutionError, ResponseValue], info: FieldInfo): ZQuery[R1, ExecutionError, ResponseValue] = {
-        ZQuery.serviceWithQuery[AuthSession] { session =>
+  val accessControlWrapper: FieldWrapper[AuthenticatedSession] = {
+    new FieldWrapper[AuthenticatedSession](wrapPureValues = true) {
+      override def wrap[R1 <: AuthenticatedSession](query: ZQuery[R1, ExecutionError, ResponseValue], info: FieldInfo): ZQuery[R1, ExecutionError, ResponseValue] = {
+        ZQuery.serviceWithQuery[AuthenticatedSession] { session =>
           val requiredAccountId = getAccountId(info)
           requiredAccountId match {
             case None => query
@@ -40,6 +40,12 @@ object AuthControlGQL {
           }
         }
       }
+    }
+  }
+
+  val accessControlWrapper2: FieldWrapper[Session] = new FieldWrapper[Session](wrapPureValues = true) {
+    override def wrap[R1 <: Session](query: ZQuery[R1, ExecutionError, ResponseValue], info: FieldInfo): ZQuery[R1, ExecutionError, ResponseValue] = {
+      query
     }
   }
 

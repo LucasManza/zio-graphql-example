@@ -1,7 +1,7 @@
-package api.graphql
+package account.api.graphql
 
 import caliban.CalibanError
-import domain.models.AccountServiceErrors.*
+import account.domain.models.AccountServiceErrors.*
 
 object AccountApiErrors {
   type AccountResponseError = CalibanError
