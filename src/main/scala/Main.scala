@@ -1,22 +1,13 @@
 import account.api.graphql.AccountGQL
 import account.domain.MockAccountService
-import authentication.AuthMiddleware
+import authentication.CustomMiddleware
 import authentication.api.graphql.AuthApiGQL
-import authentication.domain.AuthenticationServiceLive
 import authentication.domain.models.AuthDomain.NonAuthenticatedSession
+import authentication.domain.{AuthenticationServiceLive, SessionServiceLive}
 import caliban.*
-import caliban.CalibanError.*
-import caliban.Value.StringValue
-import caliban.execution.FieldInfo
-import caliban.parsing.adt.Directive
 import caliban.quick.*
-import caliban.schema.Annotations.*
-import caliban.schema.Schema
-import caliban.wrappers.Wrapper.FieldWrapper
 import zio.*
 import zio.http.*
-
-import scala.util.Try
 
 object Main extends ZIOAppDefault {
 
@@ -29,7 +20,7 @@ object Main extends ZIOAppDefault {
         .routes(
           apiPath = "/api/graphql",
           graphiqlPath = Some("/api/graphiql")
-        ).map(_ @@ AuthMiddleware.middleware2)
+        ).map(_ @@ CustomMiddleware.authMiddleware)
       port <- Server.install(protectedRoutes)
       _ <- ZIO.logInfo(s"Server started on port $port")
       _ <- ZIO.never
@@ -37,7 +28,7 @@ object Main extends ZIOAppDefault {
   }.provide(
     MockAccountService.layer,
     AuthenticationServiceLive.layer,
-    ZLayer.succeed(NonAuthenticatedSession()),
+    SessionServiceLive.layer,
     Server.defaultWithPort(8088)
   )
 

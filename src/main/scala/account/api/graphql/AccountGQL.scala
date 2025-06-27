@@ -4,15 +4,13 @@ import account.api.graphql.AccountApiErrors.AccountResponseError
 import account.domain.AccountService
 import account.domain.models.AccountDomain.*
 import authentication.api.graphql.AuthApiGQL.auto
-import authentication.api.graphql.AuthControlGQL.{HasAccountIdDirective, accessControlWrapper, accessControlWrapper2}
-import authentication.domain.models.AuthDomain.{AuthenticatedSession, NonAuthenticatedSession, Session}
+import authentication.domain.SessionService
+import authentication.domain.models.AuthDomain.AuthenticatedSession
 import caliban.*
 import caliban.schema.Annotations.GQLDescription
 import caliban.schema.ArgBuilder.auto.*
-import caliban.schema.{ArgBuilder, GenericSchema, Schema}
+import caliban.schema.{ArgBuilder, Schema}
 import zio.{IO, Task, ZIO}
-
-import scala.compiletime.ops.boolean.&&
 
 object AccountGQL {
 
@@ -43,7 +41,7 @@ object AccountGQL {
 
   case class Mutations(
                         @GQLDescription("Update the account email. [PROTECTED]")
-                        updateEmail: UpdateEmailArgs => IO[CalibanError, Account],
+                        updateEmail: UpdateEmailArgs => IO[AccountResponseError, Account],
                         @GQLDescription("Create account with valid email and password ")
                         createAccount: CreateAccountArgs => IO[AccountResponseError, Account]
                       )
@@ -52,8 +50,7 @@ object AccountGQL {
 
   val api = for {
     accountService <- ZIO.service[AccountService]
-    //    authenticatedService <- ZIO.service[AuthenticationSessionService]
-    session <- ZIO.service[Session]
+    sessionService <- ZIO.service[SessionService]
     queries = Queries(
       getAccountByEmail = args => accountService.getAccountByEmail(args.email).mapError(AccountApiErrors.handleError),
       getAllAccounts = accountService.getAllAccounts
@@ -62,14 +59,13 @@ object AccountGQL {
       createAccount = args => accountService.createAccount(args.email, args.password).mapError(AccountApiErrors.handleError),
       updateEmail = args =>
         for {
-          accountId <- session match {
-            case NonAuthenticatedSession() => ZIO.fail(CalibanError.ExecutionError(s"Not Authenticated!"))
-            case AuthenticatedSession(accountId) => ZIO.succeed(accountId)
-          }
-          //          authSession <- authenticatedService.getAuthSession.orElseFail(CalibanError.ExecutionError(s"Not Authenticated!")) //Here I want to get the AuthSession from AuthSessionService
+          accountId <- sessionService.getAuthenticatedSession.flatMap {
+            case Some(AuthenticatedSession(accountId)) => ZIO.succeed(accountId)
+            case None => ZIO.fail(CalibanError.ExecutionError(s"Not Authenticated!"))
+          }.orElseFail(CalibanError.ExecutionError(s"Unexpectedly failed!"))
           result <- accountService.updateEmail(accountId, args.newEmail).mapError(AccountApiErrors.handleError)
         } yield result
     )
-  } yield graphQL(RootResolver(queries, mutations)) @@ accessControlWrapper2
+  } yield graphQL(RootResolver(queries, mutations))
 
 }
