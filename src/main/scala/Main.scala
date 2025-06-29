@@ -10,21 +10,21 @@ import zio.*
 import zio.http.*
 
 object Main extends ZIOAppDefault {
-
+  val program = for {
+    authApi <- AuthApiGQL.api
+    accountApi <- AccountGQL.api
+    protectedRoutes <- (accountApi |+| authApi)
+      .routes(
+        apiPath = "/api/graphql",
+        graphiqlPath = Some("/api/graphiql")
+      ).map(_ @@ CustomMiddleware.authMiddleware)
+    port <- Server.install(protectedRoutes)
+    _ <- ZIO.logInfo(s"Server started on port $port")
+    _ <- ZIO.never
+  } yield ()
 
   override def run = {
-    for {
-      authApi <- AuthApiGQL.api
-      accountApi <- AccountGQL.api
-      protectedRoutes <- (accountApi |+| authApi)
-        .routes(
-          apiPath = "/api/graphql",
-          graphiqlPath = Some("/api/graphiql")
-        ).map(_ @@ CustomMiddleware.authMiddleware)
-      port <- Server.install(protectedRoutes)
-      _ <- ZIO.logInfo(s"Server started on port $port")
-      _ <- ZIO.never
-    } yield ()
+    program
   }.provide(
     MockAccountService.layer,
     AuthenticationServiceLive.layer,

@@ -10,7 +10,7 @@ import caliban.*
 import caliban.schema.Annotations.GQLDescription
 import caliban.schema.ArgBuilder.auto.*
 import caliban.schema.{ArgBuilder, Schema}
-import zio.{IO, Task, ZIO}
+import zio.{Clock, Duration, IO, Task, ZIO}
 
 object AccountGQL {
 
@@ -59,10 +59,12 @@ object AccountGQL {
       createAccount = args => accountService.createAccount(args.email, args.password).mapError(AccountApiErrors.handleError),
       updateEmail = args =>
         for {
+//          _ <- Clock.sleep(Duration.fromSeconds(10))
           accountId <- sessionService.getAuthenticatedSession.flatMap {
             case Some(AuthenticatedSession(accountId)) => ZIO.succeed(accountId)
             case None => ZIO.fail(CalibanError.ExecutionError(s"Not Authenticated!"))
           }.orElseFail(CalibanError.ExecutionError(s"Unexpectedly failed!"))
+          _ <- ZIO.succeed(println(s"AccountID: $accountId"))
           result <- accountService.updateEmail(accountId, args.newEmail).mapError(AccountApiErrors.handleError)
         } yield result
     )

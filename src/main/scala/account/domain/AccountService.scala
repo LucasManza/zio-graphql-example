@@ -17,19 +17,39 @@ trait AccountService {
   def updateEmail(accountId: AccountId, newEmail: Email): IO[AccountNotFoundById, Account]
 
   def createAccount(email: Email, password: Password): IO[DuplicateAccount, Account]
+
+  def addAccount(newAccount: Account): IO[DuplicateAccount, Account]
 }
 
 // Mock implementation
 case class MockAccountService() extends AccountService {
-  private val mockAccountId = AccountId.apply("acc-123").toOption.get
-  private val mockAccountEmail = Email.apply("account@gmail.com").toOption.get
-  private val mockAccountPassword = Password.apply("password").toOption.get
-  private val accounts = scala.collection.concurrent.TrieMap[AccountId, Account](
-    mockAccountId -> Account(mockAccountId, mockAccountEmail, mockAccountPassword)
+  private val accounts = List(
+    Account(
+      id = AccountId.apply("acc-001").toOption.get,
+      email = Email.apply("user1@test.com").toOption.get,
+      password = Password.apply("password1").toOption.get
+    ),
+    Account(
+      id = AccountId.apply("acc-002").toOption.get,
+      email = Email.apply("user2@test.com").toOption.get,
+      password = Password.apply("password2").toOption.get
+    ),
+    Account(
+      id = AccountId.apply("acc-003").toOption.get,
+      email = Email.apply("user3@test.com").toOption.get,
+      password = Password.apply("password3").toOption.get
+    )
   )
 
+  private val dummyRepo: scala.collection.concurrent.TrieMap[AccountId, Account] =
+    accounts.foldLeft(new scala.collection.concurrent.TrieMap[AccountId, Account]()) { (acc, account) =>
+      acc.put(account.id, account)
+      acc
+    }
+
+
   override def getAccountById(accountId: AccountId): IO[AccountNotFoundById, Account] = {
-    accounts.get(accountId) match {
+    dummyRepo.get(accountId) match {
       case Some(account) => ZIO.succeed(account)
       case None => ZIO.fail(AccountNotFoundById(accountId))
     }
@@ -39,7 +59,7 @@ case class MockAccountService() extends AccountService {
     for {
       account <- getAccountById(accountId)
       updated = account.copy(email = newEmail)
-      result <- accounts.put(accountId, updated) match {
+      result <- dummyRepo.put(accountId, updated) match {
         case Some(_) => ZIO.succeed(updated)
         case None => ZIO.fail(AccountNotFoundById(accountId))
       }
@@ -47,26 +67,30 @@ case class MockAccountService() extends AccountService {
   }
 
   override def getAccountByEmail(email: Email): IO[AccountNotFoundByEmail, Account] =
-    accounts.find(a => a._2.email == email) match {
+    dummyRepo.find(a => a._2.email == email) match {
       case Some((_, account)) => ZIO.succeed(account)
       case None => ZIO.fail(AccountNotFoundByEmail(email))
     }
 
   override def createAccount(email: Email, password: Password): IO[DuplicateAccount, Account] = {
+    val accountId = AccountId.apply(RandomStringGenerator.randomAlphanumeric()).toOption.get
+
+    addAccount(Account(accountId, email, password))
+  }
+
+  override def addAccount(newAccount: Account): IO[DuplicateAccount, Account] = {
     for {
-      _ <- getAccountByEmail(email).flip.orElseFail(DuplicateAccount(email))
-      accountId = AccountId.apply(RandomStringGenerator.randomAlphanumeric()).toOption.get
-      newAccount = Account(accountId, email, password)
+      _ <- getAccountByEmail(newAccount.email).flip.orElseFail(DuplicateAccount(newAccount.email))
       result <-
-        if accounts.contains(newAccount.id) then ZIO.fail(DuplicateAccount(email))
+        if dummyRepo.contains(newAccount.id) then ZIO.fail(DuplicateAccount(newAccount.email))
         else {
-          accounts += newAccount.id -> newAccount
+          dummyRepo += newAccount.id -> newAccount
           ZIO.succeed(newAccount)
         }
     } yield result
   }
 
-  override def getAllAccounts: Task[List[Account]] = ZIO.attempt(accounts.values.toList)
+  override def getAllAccounts: Task[List[Account]] = ZIO.attempt(dummyRepo.values.toList)
 }
 
 object MockAccountService {

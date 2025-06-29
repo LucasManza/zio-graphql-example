@@ -27,13 +27,4 @@ object SessionServiceLive {
         }
       }
   }
-
-  //  val unauthenticatedLayer: ULayer[AuthenticationSessionService] = ZLayer.succeed(new AuthenticationSessionService {
-  //    override def getCurrentUser: IO[AuthenticationServiceError, AuthenticatedSession] =
-  //      ZIO.fail(AuthenticationServiceError.AuthenticationRequired)
-  //  })
-  //
-  //  def authenticatedLayer(authSession: AuthenticatedSession): ULayer[AuthenticationSessionService] = ZLayer.succeed(new AuthenticationSessionService {
-  //    override def getCurrentUser: IO[AuthenticationServiceError, AuthenticatedSession] = ZIO.succeed(authSession)
-  //  })
 }
