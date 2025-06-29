@@ -1,7 +1,7 @@
 package utils
 
 
-import account.domain.models.AccountDomain.{Account, AccountId, Email}
+import account.domain.models.AccountDomain.{Account, AccountId}
 import authentication.domain.AuthenticationServiceError
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 
@@ -26,12 +26,10 @@ object JwtUtil {
     Jwt.decode(token, secretKey, Seq(algo)).toEither
       .flatMap { jwt =>
         val accountIdRaw = jwt.subject.getOrElse("")
-//        val emailRaw = jwt.content
 
         if (accountIdRaw.nonEmpty) {
           for {
             accountId <- AccountId.apply(accountIdRaw).toOption.toRight(AuthenticationServiceError.InvalidCredentials)
-            //            email <- Email.apply(emailRaw).toOption.toRight(AuthenticationServiceError.InvalidCredentials)
           } yield accountId
         } else Left(AuthenticationServiceError.InvalidToken)
       }

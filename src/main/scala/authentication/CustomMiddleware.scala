@@ -1,7 +1,7 @@
 package authentication
 
 import authentication.domain.SessionService
-import authentication.domain.models.AuthDomain.{AuthenticatedSession, NonAuthenticatedSession, Session}
+import authentication.domain.models.AuthDomain.{AuthenticatedSession, NonAuthenticatedSession}
 import utils.JwtUtil
 import zio.*
 import zio.http.*
@@ -23,19 +23,6 @@ object CustomMiddleware {
               .as(true)
         }
       case _ => ZIO.succeed(true)
-    }
-  }
-
-  val middleware2: HandlerAspect[Any, Session] = Middleware.customAuthProviding[Session] { (request: Request) =>
-    request.headers.get(Header.Authorization) match {
-      case Some(Header.Authorization.Bearer(token)) =>
-        JwtUtil.decode(token.value.mkString) match {
-          case Left(error) =>
-            Some(NonAuthenticatedSession())
-          case Right(accountId) =>
-            Some(AuthenticatedSession(accountId))
-        }
-      case _ => Some(NonAuthenticatedSession())
     }
   }
 }
